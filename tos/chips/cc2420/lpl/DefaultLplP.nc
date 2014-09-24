@@ -261,7 +261,17 @@ implementation {
           || call SendState.getState() == S_LPL_SENDING) {
         initializeSend();
       }
+      return;
     }
+    /* here radio didn't start for an error, we ask radio on to send, 
+     * so send is not possible, signal with a sendDone fails...
+     */
+    if(!call SendState.isState(S_LPL_NOT_SENDING)) {
+      call SendState.toIdle();
+      call SendDoneTimer.stop();
+      signal Send.sendDone(currentSendMsg, FAIL);
+    }
+    /* we are not sending, not need to signal the radio On fails */
   }
     
   event void SubControl.stopDone(error_t error) {
@@ -270,7 +280,7 @@ implementation {
       if(call SendState.getState() == S_LPL_FIRST_MESSAGE
           || call SendState.getState() == S_LPL_SENDING) {
         // We're in the middle of sending a message; start the radio back up
-        post startRadio();
+	post startRadio();
         
       } else {        
         call OffTimer.stop();

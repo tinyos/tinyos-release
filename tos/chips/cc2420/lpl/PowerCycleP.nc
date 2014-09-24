@@ -194,6 +194,12 @@ implementation {
   
   /***************** SubControl Events ****************/
   event void SubControl.startDone(error_t error) {
+    if(error) {
+      //radio didn't start, retry
+      post startRadio();
+      return;
+    }
+
     call RadioPowerState.forceState(S_ON);
     //call Leds.led2On();
     
@@ -310,5 +316,3 @@ implementation {
   default event void SplitControl.stopDone(error_t error) {
   }
 }
-
-

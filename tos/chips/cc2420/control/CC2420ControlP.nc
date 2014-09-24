@@ -70,6 +70,7 @@ module CC2420ControlP @safe() {
   uses interface CC2420Strobe as SRFOFF;
   uses interface CC2420Strobe as SXOSCOFF;
   uses interface CC2420Strobe as SXOSCON;
+  uses interface CC2420Strobe as SNOP;
   
   uses interface Resource as SpiResource;
   uses interface Resource as RssiResource;
@@ -121,6 +122,7 @@ implementation {
   void writeMdmctrl0();
   void writeId();
   void writeTxctrl();
+  void startSUCCESS();
 
   task void sync();
   task void syncDone();
@@ -250,6 +252,8 @@ implementation {
 
       writeTxctrl();
     }
+
+    call StartupTimer.start( CC2420_TIME_OSC );
     return SUCCESS;
   }
 
@@ -285,7 +289,9 @@ implementation {
     return SUCCESS;
   }
 
-  
+  async command bool CC2420Power.isOn() {
+    return m_state == S_XOSC_STARTED;
+  }
   /***************** CC2420Config Commands ****************/
   command uint8_t CC2420Config.getChannel() {
     atomic return m_channel;
@@ -434,18 +440,28 @@ implementation {
       call RSTN.clr();
       call RSTN.set();
       signal CC2420Power.startVRegDone();
+      return;
+    }
+
+    if( m_state == S_XOSC_STARTING) {
+      //timeout on interrupt on CCA for oscillator expire
+      if(!(call SNOP.strobe() & CC2420_STATUS_XOSC16M_STABLE)) {
+	m_state = S_VREG_STARTED;
+	call InterruptCCA.disable();
+	call StartupTimer.stop(); //to be sure not fire again
+	call IOCFG1.write( 0 );
+	signal CC2420Power.startOscillatorDone(FAIL);
+	return;
+      }
+
+      startSUCCESS();
+      return;
     }
   }
 
   /***************** InterruptCCA Events ****************/
   async event void InterruptCCA.fired() {
-    m_state = S_XOSC_STARTED;
-    call InterruptCCA.disable();
-    call IOCFG1.write( 0 );
-    writeId();
-    call CSN.set();
-    call CSN.clr();
-    signal CC2420Power.startOscillatorDone();
+    startSUCCESS();
   }
  
   /***************** ActiveMessageAddress Events ****************/
@@ -538,7 +554,19 @@ implementation {
 			 ( (CC2420_DEF_RFPOWER & 0x1F) << CC2420_TXCTRL_PA_LEVEL ) );
     }
   }
-  /***************** Defaults ****************/
+
+  void startSUCCESS() {
+    m_state = S_XOSC_STARTED;
+    call StartupTimer.stop(); //avoid timeout on fired interrupt
+    call InterruptCCA.disable();
+    call IOCFG1.write( 0 );
+    writeId();
+    call CSN.set();
+    call CSN.clr();
+    signal CC2420Power.startOscillatorDone(SUCCESS);
+  }
+
+ /***************** Defaults ****************/
   default event void CC2420Config.syncDone( error_t error ) {
   }
 

@@ -86,6 +86,7 @@ implementation {
   CC2420ControlP.RXCTRL1 -> Spi.RXCTRL1;
   CC2420ControlP.RSSI  -> Spi.RSSI;
   CC2420ControlP.TXCTRL  -> Spi.TXCTRL;
+  CC2420ControlP.SNOP -> Spi.SNOP;
 
   components new CC2420SpiC() as SyncSpiC;
   CC2420ControlP.SyncResource -> SyncSpiC;
