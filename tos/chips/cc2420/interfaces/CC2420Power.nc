@@ -73,7 +73,7 @@ interface CC2420Power {
   /**
    * Signals that the oscillator has been started.
    */
-  async event void startOscillatorDone();
+  async event void startOscillatorDone(error_t err);
 
   /**
    * Stop the oscillator.
@@ -95,5 +95,12 @@ interface CC2420Power {
    * @return SUCCESS if receive mode has been disabled, FAIL otherwise.
    */
   async command error_t rfOff();
+
+  /**
+   * Query if radio is on
+   *
+   * @return TRUE if radio is on, FALSE if is off or in an intermediate state.
+   */
+  async command bool isOn();
 
 }

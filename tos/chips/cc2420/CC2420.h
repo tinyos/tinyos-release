@@ -190,6 +190,7 @@ enum {
 enum cc2420_enums {
   CC2420_TIME_ACK_TURNAROUND = 7, // jiffies
   CC2420_TIME_VREN = 20,          // jiffies
+  CC2420_TIME_OSC = 64,           // jiffies, about 2ms = double respect datasheet
   CC2420_TIME_SYMBOL = 2,         // 2 symbols / jiffy
   CC2420_BACKOFF_PERIOD = ( 20 / CC2420_TIME_SYMBOL ), // symbols
   CC2420_MIN_BACKOFF = ( 20 / CC2420_TIME_SYMBOL ),  // platform specific?

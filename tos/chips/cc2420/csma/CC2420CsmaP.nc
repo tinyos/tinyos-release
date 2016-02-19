@@ -215,7 +215,10 @@ implementation {
     call CC2420Power.startOscillator();
   }
 
-  async event void CC2420Power.startOscillatorDone() {
+  async event void CC2420Power.startOscillatorDone(error_t err) {
+    if(err) 
+      call CC2420Power.stopVReg();
+
     post startDone_task();
   }
   
@@ -255,11 +258,17 @@ implementation {
   }
 
   task void startDone_task() {
-    call SubControl.start();
-    call CC2420Power.rxOn();
+    error_t err = FAIL;
+    if(call CC2420Power.isOn()) {
+      call SubControl.start();
+      call CC2420Power.rxOn();
+      call SplitControlState.forceState(S_STARTED);
+      err = SUCCESS;
+    }
+    else
+      call SplitControlState.forceState(S_STOPPED);
     call Resource.release();
-    call SplitControlState.forceState(S_STARTED);
-    signal SplitControl.startDone( SUCCESS );
+    signal SplitControl.startDone( err );
   }
   
   task void stopDone_task() {
